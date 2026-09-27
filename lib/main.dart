@@ -34,7 +34,69 @@ class _HomeState extends State<Home>{
  String _homeLine(int remain){if(spent==0&&fixed.isNotEmpty)return 'りゅう、今月の固定費は ${yen(fixedTotal)} です。引き落とし日になったら私が自動で記録しますね。';if(spent==0)return 'りゅう、今月も一緒に記録していきましょう。使ったら私に教えてくださいね。';if(remain<0)return '……りゅう。予算を超えています。責めませんから、ここからどうするか一緒に整理しましょう。';if(budget>0&&spent/budget>.7)return '少し支出が増えてきましたね。残りは ${yen(remain)}。私が見ていますから、焦らずいきましょう。';return '今月はあと ${yen(remain)} 使えます。今のところ大丈夫ですよ、りゅう。';}
  Future<void> _settings() async {await showModalBottomSheet(context:context,isScrollControlled:true,builder:(c)=>SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,children:[ListTile(leading:const Icon(Icons.account_balance_wallet_outlined),title:const Text('月の生活予算'),subtitle:Text(yen(budget)),onTap:(){Navigator.pop(c);_budgetDialog();}),ListTile(leading:const Icon(Icons.autorenew),title:const Text('毎月の固定費'),subtitle:Text(fixed.isEmpty?'まだ登録されていません':'${fixed.length}件 ・ ${yen(fixedTotal)} / 月'),onTap:(){Navigator.pop(c);_fixedDialog();})]))));}
  Future<void> _budgetDialog() async {final c=TextEditingController(text:'$budget');final v=await showDialog<int>(context:context,builder:(x)=>AlertDialog(title:const Text('月の生活予算'),content:TextField(controller:c,keyboardType:TextInputType.number,decoration:const InputDecoration(suffixText:'円')),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('キャンセル')),FilledButton(onPressed:()=>Navigator.pop(x,int.tryParse(c.text)),child:const Text('保存'))]));if(v!=null){budget=v;await store.setBudget(v);setState((){});}}
- Future<void> _fixedDialog() async {await showDialog(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setLocal)=>AlertDialog(title:const Text('毎月の固定費'),content:SizedBox(width:500,child:fixed.isEmpty?const Text('まだ固定費がありません。\n一度登録すれば毎月自動で記録します。'):ListView(shrinkWrap:true,children:fixed.map((f)=>SwitchListTile(contentPadding:EdgeInsets.zero,value:f.enabled,onChanged:(v)async{final i=fixed.indexWhere((e)=>e.id==f.id);fixed[i]=f.copyWith(enabled:v);await store.saveFixedExpenses(fixed);setLocal((){});setState((){});},title:Text(f.title),subtitle:Text('${yen(f.amount)} ・ 毎月${f.day}日 ・ ${f.account}'),secondary:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()async{fixed.removeWhere((e)=>e.id==f.id);await store.saveFixedExpenses(fixed);setLocal((){});setState((){});})).toList())),actions:[TextButton.icon(onPressed:()async{final v=await showDialog<RecurringExpense>(context:ctx,builder:(_)=>const FixedExpenseEditor());if(v!=null){fixed.add(v);await store.saveFixedExpenses(fixed);await _applyFixed();setLocal((){});setState((){});}},icon:const Icon(Icons.add),label:const Text('追加')),FilledButton(onPressed:()=>Navigator.pop(ctx),child:const Text('完了'))])));}
+ Future<void> _fixedDialog() async {
+   await showDialog(
+     context: context,
+     builder: (ctx) => StatefulBuilder(
+       builder: (ctx, setLocal) => AlertDialog(
+         title: const Text('毎月の固定費'),
+         content: SizedBox(
+           width: 500,
+           child: fixed.isEmpty
+               ? const Text('まだ固定費がありません。\n一度登録すれば毎月自動で記録します。')
+               : ListView(
+                   shrinkWrap: true,
+                   children: fixed.map((f) => SwitchListTile(
+                     contentPadding: EdgeInsets.zero,
+                     value: f.enabled,
+                     onChanged: (v) async {
+                       final i = fixed.indexWhere((e) => e.id == f.id);
+                       fixed[i] = f.copyWith(enabled: v);
+                       await store.saveFixedExpenses(fixed);
+                       setLocal(() {});
+                       setState(() {});
+                     },
+                     title: Text(f.title),
+                     subtitle: Text('${yen(f.amount)} ・ 毎月${f.day}日 ・ ${f.account}'),
+                     secondary: IconButton(
+                       icon: const Icon(Icons.delete_outline),
+                       onPressed: () async {
+                         fixed.removeWhere((e) => e.id == f.id);
+                         await store.saveFixedExpenses(fixed);
+                         setLocal(() {});
+                         setState(() {});
+                       },
+                     ),
+                   )).toList(),
+                 ),
+         ),
+         actions: [
+           TextButton.icon(
+             onPressed: () async {
+               final v = await showDialog<RecurringExpense>(
+                 context: ctx,
+                 builder: (_) => const FixedExpenseEditor(),
+               );
+               if (v != null) {
+                 fixed.add(v);
+                 await store.saveFixedExpenses(fixed);
+                 await _applyFixed();
+                 setLocal(() {});
+                 setState(() {});
+               }
+             },
+             icon: const Icon(Icons.add),
+             label: const Text('追加'),
+           ),
+           FilledButton(
+             onPressed: () => Navigator.pop(ctx),
+             child: const Text('完了'),
+           ),
+         ],
+       ),
+     ),
+   );
+ }
 }
 String yen(int n)=>NumberFormat.currency(locale:'ja_JP',symbol:'¥',decimalDigits:0).format(n);
 
