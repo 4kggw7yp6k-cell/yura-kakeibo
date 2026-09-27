@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction.dart';
 import '../models/recurring_expense.dart';
+import '../models/recurring_income.dart';
 
 class KakeiboStore {
   static const _txKey='transactions';
   static const _budgetKey='monthlyBudget';
   static const _fixedKey='recurringExpenses';
+  static const _incomeKey='recurringIncomes';
   Future<List<KakeiboTransaction>> load() async {
     final p=await SharedPreferences.getInstance(); final raw=p.getString(_txKey);
     if(raw==null) return [];
@@ -21,4 +23,10 @@ class KakeiboStore {
     return (jsonDecode(raw) as List).map((e)=>RecurringExpense.fromJson(Map<String,dynamic>.from(e))).toList();
   }
   Future<void> saveFixedExpenses(List<RecurringExpense> v) async { final p=await SharedPreferences.getInstance(); await p.setString(_fixedKey,jsonEncode(v.map((e)=>e.toJson()).toList())); }
+  Future<List<RecurringIncome>> recurringIncomes() async {
+    final p=await SharedPreferences.getInstance(); final raw=p.getString(_incomeKey);
+    if(raw==null) return [];
+    return (jsonDecode(raw) as List).map((e)=>RecurringIncome.fromJson(Map<String,dynamic>.from(e))).toList();
+  }
+  Future<void> saveRecurringIncomes(List<RecurringIncome> v) async { final p=await SharedPreferences.getInstance(); await p.setString(_incomeKey,jsonEncode(v.map((e)=>e.toJson()).toList())); }
 }
